@@ -5,6 +5,7 @@ import SetupNotice from './components/SetupNotice';
 import SiteApp from './site/SiteApp';
 
 const AdminApp = lazy(() => import('./admin/AdminApp'));
+const Kiosk = lazy(() => import('./admin/Kiosk'));
 
 export default function App() {
   if (!isConfigured) return <SetupNotice />;
@@ -12,6 +13,7 @@ export default function App() {
     <Suspense fallback={<div className="p-8 text-stone-500">Carregando…</div>}>
       <Routes>
         <Route path="/admin/*" element={<AdminApp />} />
+        <Route path="/ponto" element={<Kiosk />} />
         <Route path="/*" element={<SiteApp />} />
       </Routes>
     </Suspense>

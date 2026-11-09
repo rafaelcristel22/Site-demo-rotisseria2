@@ -3,15 +3,18 @@
 begin;
 
 -- Usuários: admin (primeiro), caixa, gerente
-insert into auth.users(id, email, raw_user_meta_data) values
-  ('00000000-0000-0000-0000-00000000000a','admin@teste.local','{"full_name":"Admin"}'),
-  ('00000000-0000-0000-0000-00000000000c','caixa@teste.local','{"full_name":"Operador","role_code":"caixa","invited":true}'),
-  ('00000000-0000-0000-0000-00000000000b','gerente@teste.local','{"full_name":"Gerente","role_code":"gerente","invited":true}')
+insert into auth.users(id, email, raw_user_meta_data, raw_app_meta_data) values
+  ('00000000-0000-0000-0000-00000000000a','admin@teste.local','{"full_name":"Admin"}','{}'),
+  ('00000000-0000-0000-0000-00000000000c','caixa@teste.local','{"full_name":"Operador"}','{"role_code":"caixa","invited":true}'),
+  ('00000000-0000-0000-0000-00000000000b','gerente@teste.local','{"full_name":"Gerente"}','{"role_code":"gerente","invited":true}'),
+  -- tentativa de autopromoção pelo cadastro público
+  ('00000000-0000-0000-0000-0000000000ee','intruso@teste.local','{"full_name":"Intruso","role_code":"admin","invited":true}','{}')
 on conflict do nothing;
 
 do $$ begin
   assert (select role_code from public.users where email='admin@teste.local') = 'admin', 'primeiro usuário deve ser admin';
   assert (select role_code from public.users where email='caixa@teste.local') = 'caixa', 'papel do caixa';
+  assert (select role_code = 'funcionario' and not is_active from public.users where email='intruso@teste.local'), 'cadastro público não pode se promover';
 end $$;
 update public.users set authorization_pin_hash = extensions.crypt('4321', extensions.gen_salt('bf', 4)) where email = 'gerente@teste.local';
 update public.company_settings set opening_hours = (select jsonb_object_agg(d::text, '{"open":"00:00","close":"23:59","closed":false}'::jsonb) from generate_series(0,6) d),

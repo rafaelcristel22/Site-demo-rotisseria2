@@ -352,20 +352,25 @@ create trigger audit_user_overrides after insert or update or delete on public.u
 -- ---------------------------------------------------------------------
 create or replace function public.handle_new_auth_user() returns trigger
 language plpgsql security definer set search_path = public as $$
-declare v_role text; v_meta jsonb := coalesce(new.raw_user_meta_data, '{}'::jsonb);
+declare
+  v_role text;
+  v_meta jsonb := coalesce(new.raw_user_meta_data, '{}'::jsonb);   -- editável pelo próprio usuário: só dados de exibição
+  v_app  jsonb := coalesce(new.raw_app_meta_data, '{}'::jsonb);    -- gravável apenas com a chave de serviço (Edge Function)
+  v_first boolean := not exists (select 1 from public.users);
 begin
-  if coalesce(v_meta->>'account_type','staff') <> 'staff' then return new; end if;
-  if not exists (select 1 from public.users) then
+  -- contas de clientes do site (se um dia existirem) não recebem perfil interno
+  if coalesce(v_app->>'account_type', v_meta->>'account_type', 'staff') <> 'staff' then return new; end if;
+  if v_first then
     v_role := 'admin';
   else
-    v_role := coalesce(nullif(v_meta->>'role_code',''), 'funcionario');
-    if not exists (select 1 from public.roles where code = v_role) then v_role := 'funcionario'; end if;
+    -- papel e liberação NUNCA vêm de user_metadata (o próprio usuário poderia se promover)
+    v_role := coalesce(nullif(v_app->>'role_code',''), 'funcionario');
+    if v_role = 'admin' or not exists (select 1 from public.roles where code = v_role) then v_role := 'funcionario'; end if;
   end if;
   insert into public.users(id, email, full_name, role_code, is_active)
   values (new.id, new.email, coalesce(nullif(v_meta->>'full_name',''), split_part(new.email,'@',1)), v_role,
-          -- contas novas (exceto a primeira) começam inativas até aprovação do administrador,
-          -- salvo quando criadas pela Edge Function administrativa (invited=true)
-          v_role = 'admin' or coalesce((v_meta->>'invited')::boolean, false));
+          -- contas novas começam inativas até liberação, exceto a primeira e as criadas pela função administrativa
+          v_first or coalesce((v_app->>'invited')::boolean, false));
   return new;
 end $$;
 

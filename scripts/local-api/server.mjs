@@ -12,6 +12,10 @@ import http from 'node:http';
 import crypto from 'node:crypto';
 import pg from 'pg';
 
+// tipos como o PostgREST devolve em JSON: date → 'AAAA-MM-DD', numeric/bigint → número
+pg.types.setTypeParser(1082, (v) => v);
+pg.types.setTypeParser(1700, (v) => (v === null ? null : Number(v)));
+pg.types.setTypeParser(20, (v) => (v === null ? null : Number(v)));
 const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL ?? 'postgres://postgres:postgres@localhost:5432/rotisseria_test' });
 const PORT = Number(process.env.PORT ?? 54321);
 const SECRET = process.env.JWT_SECRET ?? crypto.randomBytes(32).toString('hex');
@@ -170,8 +174,8 @@ const server = http.createServer(async (req, res) => {
       if (!allowed) return send(res, 403, { error: 'Permissão negada' });
       const c = await pool.connect();
       try {
-        const u = (await c.query("insert into auth.users(email, encrypted_password, raw_user_meta_data) values ($1, extensions.crypt($2, extensions.gen_salt('bf', 8)), $3) returning id",
-          [body.email, body.password, { full_name: body.full_name, role_code: body.role_code, invited: true }])).rows[0];
+        const u = (await c.query("insert into auth.users(email, encrypted_password, raw_user_meta_data, raw_app_meta_data) values ($1, extensions.crypt($2, extensions.gen_salt('bf', 8)), $3, $4) returning id",
+          [body.email, body.password, { full_name: body.full_name }, { role_code: body.role_code, invited: true }])).rows[0];
         return send(res, 200, { id: u.id });
       } catch (e) { return send(res, 400, { error: e.message }); } finally { c.release(); }
     }
@@ -187,7 +191,12 @@ const server = http.createServer(async (req, res) => {
         const call = `public.${rpcM[1]}(${names.map((n, i) => `${n} => $${i + 1}::${types[n] ?? 'text'}`).join(', ')})`;
         const vals = names.map((n) => (args[n] !== null && typeof args[n] === 'object' ? JSON.stringify(args[n]) : args[n]));
         const composite = retset.s || !['jsonb', 'json', 'text', 'uuid', 'numeric', 'integer', 'bigint', 'boolean', 'void', 'date', 'timestamp with time zone'].includes(retset.t);
-        if (composite) return (await c.query(`select * from ${call} r`, vals)).rows.filter((r) => Object.values(r).some((v) => v !== null) || !retset.s);
+        if (composite) {
+          const rows = (await c.query(`select * from ${call} r`, vals)).rows;
+          if (retset.s) return rows;
+          // função que devolve um único registro: objeto (ou null se todos os campos forem nulos), como no PostgREST
+          return rows[0] && Object.values(rows[0]).some((v) => v !== null) ? rows[0] : null;
+        }
         return (await c.query(`select ${call} as r`, vals)).rows[0]?.r ?? null;
       });
       return send(res, 200, result);

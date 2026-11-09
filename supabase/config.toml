@@ -1,0 +1,49 @@
+# Configuração do Supabase CLI (supabase start / db push / functions deploy)
+project_id = "rotisseria-erp"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "storage"]
+extra_search_path = ["public", "extensions"]
+max_rows = 2000
+
+[db]
+port = 54322
+major_version = 15
+
+[db.seed]
+enabled = true
+sql_paths = ["./seed.sql"]
+
+[realtime]
+enabled = true
+
+[storage]
+enabled = true
+file_size_limit = "10MiB"
+
+[auth]
+enabled = true
+site_url = "http://localhost:5173"
+additional_redirect_urls = ["http://localhost:5173/admin/redefinir-senha"]
+jwt_expiry = 3600
+enable_refresh_token_rotation = true
+# Cadastro público desativado: contas da equipe são criadas pelo painel (função admin-users).
+# Para criar o PRIMEIRO administrador, habilite temporariamente ou use o painel do Supabase.
+enable_signup = false
+
+[auth.email]
+enable_signup = false
+double_confirm_changes = true
+enable_confirmations = true
+
+[auth.rate_limit]
+sign_in_sign_ups = 30
+token_refresh = 150
+
+[functions.admin-users]
+verify_jwt = true
+
+[functions.ai-assistant]
+verify_jwt = true
