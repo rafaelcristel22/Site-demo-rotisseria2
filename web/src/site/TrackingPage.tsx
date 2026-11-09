@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { Check, ChefHat, Bike, PackageCheck, Clock, XCircle, Store, Copy } from 'lucide-react';
+
 import { rpc } from '../lib/supabase';
 import { money, ORDER_STATUS, timeBR, dateTimeBR } from '../lib/format';
 
@@ -27,17 +27,17 @@ export default function TrackingPage() {
     return () => { alive = false; clearInterval(t); };
   }, [code]);
 
-  if (err) return <div className="mx-auto max-w-md p-8 text-center"><p className="font-display text-xl font-bold">{err}</p><Link to="/" className="btn-primary mt-4">Voltar ao cardápio</Link></div>;
-  if (!s) return <div className="mx-auto max-w-md animate-pulse p-6"><div className="h-40 rounded-3xl bg-stone-200" /></div>;
+  if (err) return <div className="mx-auto max-w-md p-8 text-center"><p className="heading text-2xl">{err}</p><Link to="/" className="btn-primary mt-4">Voltar ao cardápio</Link></div>;
+  if (!s) return <div className="mx-auto max-w-md p-6 text-stone-500">Carregando pedido…</div>;
 
   const delivery = s.channel === 'delivery';
   const steps = [
-    { key: 'pendente', label: 'Recebido', icon: Clock },
-    { key: 'novo', label: 'Confirmado', icon: Check },
-    { key: 'em_preparo', label: 'Em preparo', icon: ChefHat },
-    { key: 'pronto', label: delivery ? 'Pronto' : 'Pronto para retirada', icon: delivery ? PackageCheck : Store },
-    ...(delivery ? [{ key: 'saiu_entrega', label: 'Saiu para entrega', icon: Bike }] : []),
-    { key: 'entregue', label: delivery ? 'Entregue' : 'Retirado', icon: PackageCheck },
+    { key: 'pendente', label: 'Recebemos seu pedido' },
+    { key: 'novo', label: 'Pedido confirmado' },
+    { key: 'em_preparo', label: 'Na cozinha' },
+    { key: 'pronto', label: delivery ? 'Pronto, aguardando o entregador' : 'Pronto para retirar' },
+    ...(delivery ? [{ key: 'saiu_entrega', label: 'Saiu para entrega' }] : []),
+    { key: 'entregue', label: delivery ? 'Entregue' : 'Retirado' },
   ];
   const order = ['pendente', 'novo', 'em_preparo', 'aguardando_finalizacao', 'pronto', 'saiu_entrega', 'entregue'];
   const cur = order.indexOf(s.status);
@@ -46,58 +46,51 @@ export default function TrackingPage() {
   const eta = new Date(new Date(s.scheduled_for ?? s.created_at).getTime() + (s.scheduled_for ? 0 : s.estimated_minutes * 60000));
 
   return (
-    <div className="mx-auto max-w-lg px-5 pb-16 pt-[max(20px,env(safe-area-inset-top))]">
-      <div className="overflow-hidden rounded-3xl bg-char p-6 text-white">
-        <p className="text-sm text-white/70">Olá, {s.customer_name}! Pedido</p>
-        <p className="font-display text-4xl font-extrabold">#{s.number}</p>
-        {s.status === 'cancelado' ? (
-          <p className="mt-3 inline-flex items-center gap-2 rounded-full bg-red-500/90 px-3 py-1 text-sm font-semibold"><XCircle size={16} /> Pedido cancelado</p>
-        ) : (
-          <>
-            <p className="mt-3 text-lg font-semibold">{ORDER_STATUS[s.status]}</p>
-            {s.status !== 'entregue' && <p className="text-sm text-white/70">{s.scheduled_for ? `Agendado para ${dateTimeBR(s.scheduled_for)}` : `Previsão: ${timeBR(eta)}`}</p>}
-          </>
-        )}
-        <button onClick={() => { navigator.clipboard?.writeText(location.href).then(() => setCopied(true)).catch(() => {}); }}
-          className="mt-4 inline-flex items-center gap-1.5 text-xs text-white/70 underline"><Copy size={13} /> {copied ? 'Link copiado' : 'Copiar link de acompanhamento'}</button>
-      </div>
+    <div className="mx-auto min-h-screen max-w-lg bg-paper px-5 pb-16 pt-[max(20px,env(safe-area-inset-top))] sm:border-x sm:border-char/10">
+      <p className="text-[15px] text-stone-600">{s.customer_name}, seu pedido</p>
+      <h1 className="heading text-[44px] leading-none">Nº {s.number}</h1>
+      {s.status === 'cancelado' ? (
+        <p className="mt-3 border-l-4 border-red-600 bg-white px-3 py-2 font-semibold text-red-800">Este pedido foi cancelado.</p>
+      ) : (
+        <p className="mt-2 text-[17px]"><b>{ORDER_STATUS[s.status]}</b>
+          {s.status !== 'entregue' && <span className="text-stone-600"> · {s.scheduled_for ? `agendado para ${dateTimeBR(s.scheduled_for)}` : `previsão ${timeBR(eta)}`}</span>}</p>
+      )}
 
       {s.status !== 'cancelado' && (
-        <ol className="mt-6 space-y-0">
-          {steps.map((st, i) => {
-            const done = reached(st.key); const Icon = st.icon; const t = at(st.key);
+        <ol className="mt-6 border-l-2 border-char/15">
+          {steps.map((st) => {
+            const done = reached(st.key); const t = at(st.key);
             return (
-              <li key={st.key} className="flex gap-4">
-                <div className="flex flex-col items-center">
-                  <span className={`flex h-9 w-9 items-center justify-center rounded-full ${done ? 'bg-brand-600 text-white' : 'bg-stone-200 text-stone-400'}`}><Icon size={17} /></span>
-                  {i < steps.length - 1 && <span className={`h-8 w-0.5 ${reached(steps[i + 1].key) ? 'bg-brand-600' : 'bg-stone-200'}`} />}
-                </div>
-                <div className="pt-1.5"><p className={`font-semibold ${done ? '' : 'text-stone-400'}`}>{st.label}</p>{t && <p className="text-xs text-stone-500">{timeBR(t)}</p>}</div>
+              <li key={st.key} className="relative pb-4 pl-5 last:pb-0">
+                <span className={`absolute -left-[7px] top-1.5 h-3 w-3 rounded-full border-2 ${done ? 'border-red-600 bg-red-600' : 'border-char/25 bg-paper'}`} />
+                <p className={`text-[16px] ${done ? 'font-semibold' : 'text-stone-400'}`}>{st.label}{t && <span className="ml-2 text-[14px] font-normal text-stone-500">{timeBR(t)}</span>}</p>
               </li>
             );
           })}
         </ol>
       )}
 
-      <div className="mt-6 rounded-3xl bg-white p-5 shadow-card">
-        <h2 className="font-display text-lg font-bold">Resumo</h2>
-        <ul className="mt-3 space-y-2 text-sm">
+      <section className="mt-8 border-t border-char/15 pt-5">
+        <h2 className="heading text-[20px]">O que você pediu</h2>
+        <ul className="mt-2 space-y-2 text-[15px]">
           {s.items.map((it, i) => (
             <li key={i} className="flex justify-between gap-3">
-              <span>{Number(it.quantity)}× {it.name}{it.options?.length ? <span className="block text-xs text-stone-500">{it.options.map((o) => o.name).join(' · ')}</span> : null}</span>
+              <span>{Number(it.quantity)}× {it.name}{it.options?.length ? <span className="block text-[14px] text-stone-500">{it.options.map((o) => o.name).join(', ')}</span> : null}</span>
               <span className="tabular-nums">{money(it.total)}</span>
             </li>
           ))}
         </ul>
-        <dl className="mt-4 space-y-1 border-t border-black/5 pt-3 text-sm text-stone-600">
+        <dl className="mt-4 space-y-0.5 border-t border-dashed border-char/20 pt-3 text-[15px] text-stone-600">
           <div className="flex justify-between"><dt>Subtotal</dt><dd>{money(s.subtotal)}</dd></div>
           {delivery && <div className="flex justify-between"><dt>Entrega</dt><dd>{money(s.delivery_fee)}</dd></div>}
-          {Number(s.discount) > 0 && <div className="flex justify-between text-emerald-700"><dt>Desconto</dt><dd>− {money(s.discount)}</dd></div>}
-          <div className="flex justify-between text-base font-bold text-char"><dt>Total</dt><dd>{money(s.total)}</dd></div>
-          <div className="flex justify-between"><dt>Pagamento</dt><dd>{s.payment_method}{s.change_for ? ` · troco p/ ${money(s.change_for)}` : ''}</dd></div>
+          {Number(s.discount) > 0 && <div className="flex justify-between text-green-800"><dt>Desconto</dt><dd>− {money(s.discount)}</dd></div>}
+          <div className="flex justify-between text-lg font-bold text-char"><dt>Total</dt><dd>{money(s.total)}</dd></div>
+          <div className="flex justify-between"><dt>Pagamento</dt><dd>{s.payment_method}{s.change_for ? `, troco para ${money(s.change_for)}` : ''}</dd></div>
         </dl>
-      </div>
-      <Link to="/" className="btn-outline mt-6 w-full py-3">Fazer outro pedido</Link>
+      </section>
+      <p className="mt-6 text-[14px] text-stone-500">Esta página se atualiza sozinha. Guarde o link para acompanhar.
+        <button onClick={() => { navigator.clipboard?.writeText(location.href).then(() => setCopied(true)).catch(() => {}); }} className="ml-1 underline">{copied ? 'Copiado.' : 'Copiar link'}</button></p>
+      <Link to="/" className="btn-outline mt-6 w-full py-3">Voltar ao cardápio</Link>
     </div>
   );
 }
