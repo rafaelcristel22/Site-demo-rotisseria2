@@ -1,0 +1,2 @@
+{ "name": "Rotisseria — Pedidos", "short_name": "Pedidos", "start_url": "/", "display": "standalone",
+  "background_color": "#fbf6ef", "theme_color": "#1c1410", "icons": [{ "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" }] }
