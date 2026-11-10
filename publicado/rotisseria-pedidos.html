@@ -1,0 +1,447 @@
+<title>Rotisseria Brasa &amp; Sabor</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: cardápio de balcão em coluna única (máx. 680px), barra de categorias fixa, folhas que sobem de baixo. */
+:root {
+  --paper: #fbf8f2; --band: #f2ece1; --ink: #1b1a17; --muted: #6b655c; --line: rgba(27,26,23,.12);
+  --red: #b3261e; --red-ink: #ffffff; --ok: #1f6b3a; --warn: #8a5a00; --card: #ffffff;
+  --display: "Barlow Condensed", "Arial Narrow", sans-serif; --body: Barlow, system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --paper: #171614; --band: #201e1b; --ink: #f1ece4; --muted: #a59e93; --line: rgba(241,236,228,.14);
+  --red: #e0533f; --red-ink: #170c0a; --ok: #6fc18a; --warn: #e2b04a; --card: #1f1d1a; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --paper: #171614; --band: #201e1b; --ink: #f1ece4; --muted: #a59e93; --line: rgba(241,236,228,.14);
+  --red: #e0533f; --red-ink: #170c0a; --ok: #6fc18a; --warn: #e2b04a; --card: #1f1d1a; color-scheme: dark }
+* { box-sizing: border-box }
+body { background: var(--paper); color: var(--ink); font: 16px/1.45 var(--body); margin: 0 }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--paper) }
+.wrap { max-width: 680px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)) }
+h1, h2, h3 { font-family: var(--display); font-weight: 700; text-transform: uppercase; letter-spacing: .02em; margin: 0; text-wrap: balance }
+button { font: inherit; color: inherit; cursor: pointer; background: none; border: 0 }
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid var(--red); outline-offset: 2px }
+.muted { color: var(--muted) }
+.num { font-variant-numeric: tabular-nums }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border-radius: 6px; padding: 12px 16px; font-weight: 600 }
+.btn-red { background: var(--red); color: var(--red-ink) }
+.btn-line { border: 1px solid var(--line) }
+.btn:disabled { opacity: .45; cursor: not-allowed }
+input, select, textarea { width: 100%; font: inherit; color: var(--ink); background: var(--card); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px }
+label > span { display: block; font-size: 14px; font-weight: 500; margin-bottom: 4px }
+
+/* cabeçalho */
+.top { padding-block: 20px 14px; display: flex; justify-content: space-between; gap: 12px; align-items: flex-start }
+.top h1 { font-size: 32px; line-height: 1 }
+.bag { position: relative; padding: 6px }
+.bag b { position: absolute; top: 0; right: 0; min-width: 18px; height: 18px; border-radius: 9px; background: var(--red); color: var(--red-ink); font-size: 11px; display: grid; place-items: center; padding: 0 4px }
+.status { margin: 0 0 4px; font-size: 15px }
+.notice { border-left: 4px solid var(--red); background: var(--card); padding: 10px 14px; margin: 10px 0 16px }
+.access { border: 1px dashed var(--line); padding: 10px 14px; margin: 0 0 16px; font-size: 14px }
+
+/* abas */
+nav.tabs { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--paper); border-block: 1px solid var(--line) }
+nav.tabs .wrap { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none }
+nav.tabs button { flex: none; padding: 12px 12px; font-weight: 600; color: var(--muted); border-bottom: 2px solid transparent; white-space: nowrap }
+nav.tabs button.on { color: var(--ink); border-color: var(--red) }
+
+/* cardápio */
+section.cat { padding-top: 26px; scroll-margin-top: 56px }
+section.cat h2 { font-size: 27px; line-height: 1 }
+.item { display: flex; gap: 12px; width: 100%; text-align: left; padding: 14px 0; border-bottom: 1px solid var(--line) }
+.item:last-child { border-bottom: 0 }
+.item .t { font-weight: 600; font-size: 17px }
+.item p { margin: 2px 0 0; color: var(--muted); font-size: 14px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden }
+.item .p { margin-top: 6px; font-weight: 600 }
+.sugg li { list-style: none }
+.sugg button { display: flex; align-items: baseline; gap: 10px; width: 100%; padding: 7px 0; text-align: left }
+.sugg .dots { flex: 1; border-bottom: 1px dotted var(--muted); transform: translateY(-4px); min-width: 20px }
+footer { margin-top: 40px; padding-block: 20px 120px; border-top: 1px solid var(--line); font-size: 14px }
+footer dl { display: grid; grid-template-columns: auto 1fr; gap: 2px 20px; margin: 8px 0 0 }
+
+/* barra da sacola */
+.bagbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; padding-bottom: max(12px, env(safe-area-inset-bottom, 0px)) }
+.bagbar .wrap > button { width: 100%; display: flex; justify-content: space-between; background: var(--red); color: var(--red-ink); border-radius: 6px; padding: 14px 18px; font-weight: 600 }
+
+/* folhas */
+.sheet { position: fixed; inset: 0; z-index: 30; display: flex; align-items: flex-end; justify-content: center }
+.sheet .shade { position: absolute; inset: 0; background: rgba(0,0,0,.45) }
+.sheet .panel { position: relative; width: 100%; max-width: 560px; max-height: 92vh; display: flex; flex-direction: column; background: var(--paper); border-radius: 10px 10px 0 0; animation: up .2s ease-out }
+@media (min-width: 640px) { .sheet { align-items: center } .sheet .panel { border-radius: 10px } }
+@keyframes up { from { transform: translateY(40px); opacity: .6 } to { transform: none; opacity: 1 } }
+@media (prefers-reduced-motion: reduce) { .sheet .panel { animation: none } }
+.panel .scroll { overflow-y: auto; padding: 20px max(16px, env(safe-area-inset-left, 0px)) 16px }
+.panel .foot { border-top: 1px solid var(--line); padding: 12px 16px max(12px, env(safe-area-inset-bottom, 0px)); display: flex; gap: 10px }
+.close { position: absolute; right: 8px; top: 8px; padding: 8px; font-size: 22px; line-height: 1 }
+.grp { margin: 14px -16px 0; padding: 10px 16px; background: var(--band); display: flex; justify-content: space-between }
+.opt { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line) }
+.opt input { width: 20px; height: 20px; accent-color: var(--red) }
+.qty { display: flex; align-items: center; border: 1px solid var(--line); border-radius: 6px }
+.qty button { width: 40px; height: 44px; font-size: 20px }
+.qty span { min-width: 22px; text-align: center }
+.line { display: flex; justify-content: space-between; gap: 10px; padding: 12px 0; border-bottom: 1px solid var(--line) }
+.choice { display: grid; grid-template-columns: 1fr 1fr; gap: 8px }
+.choice button { border: 1px solid var(--line); border-radius: 6px; padding: 10px; text-align: left }
+.choice button.on { background: var(--ink); color: var(--paper); border-color: var(--ink) }
+.form { display: grid; gap: 12px; margin-top: 12px }
+.form .two { display: grid; grid-template-columns: 1fr 96px; gap: 8px }
+.err { border-left: 4px solid var(--red); background: var(--card); padding: 8px 12px; font-size: 14px }
+.tot dl { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; margin: 0 }
+.tot dd { margin: 0; text-align: right }
+
+/* acompanhamento e loja */
+.steps { list-style: none; padding: 0 0 0 18px; margin: 18px 0; border-left: 2px solid var(--line) }
+.steps li { position: relative; padding: 0 0 12px }
+.steps li::before { content: ""; position: absolute; left: -25px; top: 6px; width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--line); background: var(--paper) }
+.steps li.done::before { background: var(--red); border-color: var(--red) }
+.steps li:not(.done) { color: var(--muted) }
+.board { display: grid; gap: 14px; margin-top: 14px }
+.ord { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 14px }
+.ord header { display: flex; justify-content: space-between; align-items: baseline; gap: 8px }
+.ord h3 { font-size: 24px }
+.pill { display: inline-block; font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 999px; border: 1px solid currentColor }
+.pill.novo { color: var(--warn) } .pill.ok { color: var(--ok) } .pill.red { color: var(--red) }
+.acts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px }
+.acts .btn { padding: 8px 12px; font-size: 14px }
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 8px; margin-top: 12px }
+.stats div { background: var(--card); border: 1px solid var(--line); border-radius: 6px; padding: 10px }
+.stats b { display: block; font-size: 20px }
+.filter { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 12px }
+.filter button { border: 1px solid var(--line); border-radius: 999px; padding: 4px 12px; font-size: 14px }
+.filter button.on { background: var(--ink); color: var(--paper) }
+</style>
+
+<div id="app"></div>
+
+<script>
+/* ---------- Cardápio (fonte: supabase/seed_catalog_demo.sql do projeto) ---------- */
+const STORE = { name: 'Rotisseria Brasa & Sabor', address: 'Rua das Palmeiras, 120 — Centro', prep: 30,
+  hours: { 0: ['10:00','15:00'], 1: null, 2: ['10:00','22:00'], 3: ['10:00','22:00'], 4: ['10:00','22:00'], 5: ['10:00','22:00'], 6: ['10:00','22:00'] } };
+const ZONES = [{ id: 'centro', name: 'Centro', fee: 5, min: 45 }, { id: 'jardim', name: 'Jardim América', fee: 7, min: 55 }, { id: 'vila', name: 'Vila Nova', fee: 8, min: 60 }];
+const PAYS = [['dinheiro','Dinheiro'],['pix','Pix'],['debito','Cartão de débito'],['credito','Cartão de crédito'],['vale','Vale-refeição']];
+const CATS = [
+  ['combos','Combos','Mais sabor por menos'], ['frangos','Frangos assados','Assados lentamente na brasa, temperados na casa'],
+  ['marmitas','Marmitas','Refeição completa, pronta para levar'], ['carnes','Carnes','Cortes assados e grelhados'],
+  ['massas','Massas','Massas frescas feitas aqui'], ['lasanhas','Lasanhas','Gratinadas e generosas'],
+  ['acompanhamentos','Acompanhamentos','Para completar a mesa'], ['saladas','Saladas','Frescas e leves'],
+  ['sobremesas','Sobremesas','O final perfeito'], ['bebidas','Bebidas','Geladas'],
+];
+const SABOR = (opts) => [{ name: 'Sabor', min: 1, max: 1, options: opts.map((n) => [n, 0]) }];
+const P = [
+  ['CO01','combos','Combo Família','Frango inteiro + maionese 500 g + farofa + refrigerante 2 L.',89.90,{ serves: 4, sug: true }],
+  ['CO02','combos','Combo Casal','Meio frango + arroz + maionese 500 g + 2 latas.',59.90,{ serves: 2 }],
+  ['FR01','frangos','Frango assado inteiro','Frango inteiro temperado por 12 horas e assado na brasa, com farofa da casa.',54.90,{ serves: 4, sug: true,
+    groups: [{ name: 'Adicionais', min: 0, max: 3, options: [['Farofa extra',6],['Molho de alho',3],['Batata assada',9.9]] }, { name: 'Ponto do frango', min: 0, max: 1, options: [['Normal',0],['Bem passado',0],['Pele crocante',0]] }] }],
+  ['FR02','frangos','Meio frango assado','Meio frango com o mesmo tempero tradicional e farofa.',31.90,{ serves: 2 }],
+  ['FR03','frangos','Frango recheado com farofa','Frango desossado recheado com farofa de bacon e linguiça.',74.90,{ serves: 5 }],
+  ['MA01','marmitas','Marmita executiva','Arroz, feijão, farofa, salada e porção de frango assado.',24.90,{ sug: true, groups: [{ name: 'Feijão', min: 1, max: 1, options: [['Carioca',0],['Preto',0],['Tropeiro',3]] }] }],
+  ['MA02','marmitas','Marmita de costela','Arroz, feijão tropeiro, mandioca e costela assada.',32.90,{}],
+  ['MA03','marmitas','Marmita fit','Arroz integral, legumes no vapor e peito de frango grelhado.',27.90,{}],
+  ['CA01','carnes','Costela assada','Costela bovina assada por 8 horas, desmanchando.',89.90,{ kg: true, serves: 3, sug: true }],
+  ['CA02','carnes','Cupim assado','Cupim macio, assado lentamente.',84.90,{ kg: true, serves: 3 }],
+  ['CA03','carnes','Pernil assado','Pernil suíno marinado com ervas.',59.90,{ kg: true, serves: 3 }],
+  ['MS01','massas','Nhoque ao sugo','Nhoque de batata artesanal com molho de tomate fresco.',38.90,{ serves: 2 }],
+  ['MS02','massas','Talharim à bolonhesa','Massa fresca com molho de carne cozido lentamente.',42.90,{ serves: 2 }],
+  ['LA01','lasanhas','Lasanha à bolonhesa','Camadas de massa fresca, bolonhesa, presunto e queijo gratinado.',49.90,{ serves: 3, sug: true }],
+  ['LA02','lasanhas','Lasanha de frango com catupiry','Frango desfiado, catupiry e muçarela gratinada.',52.90,{ serves: 3 }],
+  ['AC01','acompanhamentos','Maionese da casa (500 g)','Batata, cenoura, ovos e maionese caseira.',18.90,{ serves: 3, sug: true }],
+  ['AC02','acompanhamentos','Farofa especial (300 g)','Farofa de bacon, ovos e cebola caramelizada.',14.90,{}],
+  ['AC03','acompanhamentos','Arroz branco (500 g)','Arroz soltinho.',9.90,{}],
+  ['AC04','acompanhamentos','Mandioca cozida na manteiga','Porção de mandioca com manteiga de garrafa.',16.90,{}],
+  ['SA01','saladas','Salada verde','Folhas, tomate, pepino e cebola roxa.',15.90,{}],
+  ['SA02','saladas','Salada de maionese com frango','Clássica da casa com frango desfiado.',21.90,{}],
+  ['SO01','sobremesas','Pudim de leite','Fatia generosa de pudim de leite condensado.',12.90,{}],
+  ['SO02','sobremesas','Mousse de maracujá','Mousse aerado com calda da fruta.',10.90,{}],
+  ['BE01','bebidas','Refrigerante 2 L','Escolha o sabor.',13.90,{ groups: SABOR(['Cola','Guaraná','Laranja','Cola zero']) }],
+  ['BE02','bebidas','Refrigerante lata 350 ml','Escolha o sabor.',6.50,{ groups: SABOR(['Cola','Guaraná','Laranja','Cola zero']) }],
+  ['BE03','bebidas','Suco natural 500 ml','Laranja, limão ou maracujá.',11.90,{ groups: SABOR(['Laranja','Limão','Maracujá']) }],
+  ['BE04','bebidas','Água mineral 500 ml','Com ou sem gás.',4.50,{}],
+].map(([id, cat, name, desc, price, x]) => ({ id, cat, name, desc, price, kg: !!x.kg, serves: x.serves, sug: !!x.sug, groups: x.groups ?? [] }));
+
+/* ---------- utilidades ---------- */
+const $ = (s, el = document) => el.querySelector(s);
+const brl = (v) => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const r2 = (v) => Math.round((v + Number.EPSILON) * 100) / 100;
+const hhmm = (d) => new Date(d).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+const fmtPhone = (p) => { const d = p.replace(/\D/g, '').slice(0, 11); if (d.length <= 2) return d; if (d.length <= 6) return `(${d.slice(0,2)}) ${d.slice(2)}`; if (d.length <= 10) return `(${d.slice(0,2)}) ${d.slice(2,6)}-${d.slice(6)}`; return `(${d.slice(0,2)}) ${d.slice(2,7)}-${d.slice(7)}`; };
+const code = () => Array.from(crypto.getRandomValues(new Uint8Array(4)), (b) => 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'[b % 31]).join('');
+const unitPrice = (p, sel) => r2(p.price + p.groups.flatMap((g) => g.options).filter(([n]) => sel.includes(n)).reduce((s, [, d]) => s + d, 0));
+function openNow(at = new Date()) {
+  const h = STORE.hours[at.getDay()]; if (!h) return null;
+  const t = at.toTimeString().slice(0, 5); return t >= h[0] && t < h[1] ? h : null;
+}
+const STATUS = { recebido: 'Recebido, aguardando confirmação', confirmado: 'Confirmado', preparo: 'Na cozinha', pronto: 'Pronto', saiu: 'Saiu para entrega', entregue: 'Entregue', cancelado: 'Cancelado' };
+const FLOW = { recebido: ['confirmado', 'Aceitar pedido'], confirmado: ['preparo', 'Mandar para a cozinha'], preparo: ['pronto', 'Marcar como pronto'] };
+
+/* ---------- estado ---------- */
+let cart = []; try { cart = JSON.parse(sessionStorage.getItem('bs.cart') || '[]'); } catch { cart = []; }
+const saveCart = () => { try { sessionStorage.setItem('bs.cart', JSON.stringify(cart)); } catch {} };
+let profile = {}; try { profile = JSON.parse(localStorage.getItem('bs.profile') || '{}'); } catch {}
+let db = null, user = null, myId = null, canOrder = null, isStaff = false;
+let myDoc = null;            // documento do próprio cliente: orders/<id>
+let allDocs = [];            // loja: todos os documentos de clientes
+let sheet = null;            // folha aberta
+let staffFilter = 'ativos';
+let unsubs = [];
+
+/* ---------- capacidades (banco compartilhado do link) ---------- */
+(async () => {
+  if (!window.claude?.use) return;
+  [db, user] = await Promise.all([claude.use('db'), claude.use('user')]);
+  if (!db || !user) { canOrder = false; render(); return; }
+  myId = await user.id();
+  isStaff = !!(await user.canEdit?.());
+  const w = await user.can?.('data.write');
+  canOrder = w === false ? false : true;
+  unsubs.push(db.doc('orders/' + myId).onSnapshot((s) => { myDoc = s.exists ? s.data() : null; render(); }, () => {}));
+  if (isStaff) unsubs.push(db.collection('orders').onSnapshot((q) => { allDocs = q.docs.map((d) => ({ id: d.id, ...d.data() })); render(); }, () => {}));
+  render();
+})();
+
+/* ---------- views ---------- */
+function view() { return (location.hash || '#cardapio').slice(1); }
+window.addEventListener('hashchange', () => { sheet = null; render(); scrollTo(0, 0); });
+
+function render() {
+  const v = view();
+  const app = $('#app');
+  if (v === 'loja') app.innerHTML = staffView();
+  else if (v.startsWith('pedido-')) app.innerHTML = trackView(v.slice(7));
+  else app.innerHTML = menuView();
+  if (sheet) app.insertAdjacentHTML('beforeend', sheetHTML());
+  bind();
+}
+
+function header(extra = '') {
+  const h = openNow(); const today = STORE.hours[new Date().getDay()];
+  const count = cart.reduce((s, l) => s + l.qty, 0);
+  return `<div class="wrap"><div class="top"><div><h1>${esc(STORE.name)}</h1><div class="muted" style="font-size:14px;margin-top:4px">${esc(STORE.address)}</div></div>
+    <button class="bag" data-act="cart" aria-label="Abrir sacola"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M6 7h12l-1 13H7L6 7z"/><path d="M9 7V5a3 3 0 0 1 6 0v2"/></svg>${count ? `<b>${count}</b>` : ''}</button></div>
+    <p class="status"><b style="color:var(${h ? '--ok' : '--red'})">${h ? `Aberto até ${h[1]}` : 'Fechado agora'}</b><span class="muted"> · preparo em ~${STORE.prep} min${!h ? ' · aceitamos agendamento' : ''}${!today ? ' · hoje não abrimos' : ''}</span></p>
+    ${extra}</div>`;
+}
+
+function accessNote() {
+  if (canOrder === false) return `<div class="access">Você pode ver o cardápio, mas este link não está liberado para enviar pedidos com a sua conta. Peça ao dono acesso de <b>Colaborador</b> no menu Compartilhar.</div>`;
+  if (canOrder === null && !window.claude?.use) return `<div class="access">Abra este site pelo link do Claude para enviar pedidos.</div>`;
+  return '';
+}
+
+function menuView() {
+  const mine = (myDoc?.orders ?? []).filter((o) => !['entregue', 'cancelado'].includes(o.status));
+  const sugs = P.filter((p) => p.sug);
+  return `${header(`${accessNote()}
+    ${mine.length ? `<a class="notice" style="display:block;color:inherit;text-decoration:none" href="#pedido-${mine[0].code}"><b>Seu pedido ${mine[0].code}: ${STATUS[mine[0].status]}</b><br><span class="muted">Toque para acompanhar</span></a>` :
+      `<div class="notice"><b>Frango assado na brasa</b><br><span class="muted">Temperado por 12 horas. Peça agora e retire quentinho.</span></div>`}
+    ${isStaff ? `<p style="margin:-6px 0 14px"><a href="#loja" style="color:var(--red);font-weight:600">Abrir painel da loja →</a></p>` : ''}`)}
+  <nav class="tabs"><div class="wrap">${CATS.map(([s, n], i) => `<button data-go="${s}" class="${i === 0 ? 'on' : ''}">${n}</button>`).join('')}</div></nav>
+  <div class="wrap">
+    <section class="cat" style="padding-top:22px"><h2 style="font-size:22px">Sugestões da casa</h2>
+      <ul class="sugg" style="padding:0;margin:6px 0 0">${sugs.map((p) => `<li><button data-open="${p.id}"><span style="font-weight:500">${esc(p.name)}</span><span class="dots"></span><span class="num" style="font-weight:600">${brl(p.price)}${p.kg ? '/kg' : ''}</span></button></li>`).join('')}</ul></section>
+    ${CATS.map(([s, n, d]) => `<section class="cat" id="${s}"><h2>${n}</h2><div class="muted" style="font-size:14px">${d}</div>
+      <div>${P.filter((p) => p.cat === s).map((p) => `<button class="item" data-open="${p.id}"><div style="min-width:0;flex:1"><div class="t">${esc(p.name)}</div><p>${esc(p.desc)}</p>
+        <div class="p num">${brl(p.price)}<span class="muted" style="font-weight:400">${p.kg ? ' o kg' : ''}${p.serves > 1 ? ` · serve ${p.serves}` : ''}</span></div></div></button>`).join('')}</div></section>`).join('')}
+    <footer><h3 style="font-size:18px">Horário</h3><dl>${['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'].map((d, i) => `<dt>${d}</dt><dd style="margin:0">${STORE.hours[i] ? STORE.hours[i].join(' às ') : 'Fechado'}</dd>`).join('')}</dl>
+      <p class="muted" style="margin-top:16px">Seus dados são usados só para processar o pedido. Você pode pedir acesso, correção ou exclusão a qualquer momento.</p>
+      ${(myDoc?.orders ?? []).length ? `<p><a href="#pedido-${myDoc.orders[0].code}" style="color:inherit">Meus pedidos</a></p>` : ''}</footer>
+  </div>
+  ${cart.length ? `<div class="bagbar"><div class="wrap"><button data-act="cart"><span>Ver sacola (${cart.reduce((s, l) => s + l.qty, 0)})</span><span class="num">${brl(subtotal())}</span></button></div></div>` : ''}`;
+}
+
+const subtotal = () => r2(cart.reduce((s, l) => s + l.unit * l.qty, 0));
+
+function sheetHTML() {
+  let body = '', foot = '';
+  if (sheet.type === 'product') {
+    const p = P.find((x) => x.id === sheet.id); const sel = sheet.sel;
+    const err = p.groups.map((g) => { const n = g.options.filter(([o]) => sel.includes(o)).length; return n < g.min ? `Escolha uma opção em "${g.name}"` : null; }).find(Boolean);
+    body = `<h2 style="font-size:28px;padding-right:30px">${esc(p.name)}</h2><p class="num" style="font-size:18px;font-weight:600;margin:4px 0">${brl(p.price)}${p.kg ? ' o kg' : ''}</p>
+      <p style="margin:8px 0 0">${esc(p.desc)}</p>${p.serves ? `<p class="muted" style="font-size:14px;margin:6px 0 0">Serve ${p.serves} ${p.serves > 1 ? 'pessoas' : 'pessoa'}</p>` : ''}
+      ${p.groups.map((g, gi) => `<div class="grp"><div><b>${esc(g.name)}</b><div class="muted" style="font-size:13px">${g.max === 1 ? 'Escolha 1' : `Escolha até ${g.max}`}</div></div>${g.min ? '<span class="muted" style="font-size:13px;font-weight:600">obrigatório</span>' : ''}</div>
+        ${g.options.map(([o, d]) => `<label class="opt"><span>${esc(o)}${d ? ` <span class="muted">+ ${brl(d)}</span>` : ''}</span><input type="${g.max === 1 ? 'radio' : 'checkbox'}" name="g${gi}" data-opt="${esc(o)}" data-g="${gi}" ${sel.includes(o) ? 'checked' : ''}></label>`).join('')}`).join('')}
+      <label style="display:block;margin-top:14px"><span>Observação para a cozinha</span><textarea id="pnotes" rows="2" maxlength="300" placeholder="Ex.: sem cebola">${esc(sheet.notes)}</textarea></label>
+      ${sheet.tried && err ? `<p class="err">${err}</p>` : ''}`;
+    foot = `<div class="qty"><button data-q="-1" aria-label="Diminuir">−</button><span class="num">${sheet.qty}</span><button data-q="1" aria-label="Aumentar">+</button></div>
+      <button class="btn btn-red" style="flex:1;justify-content:space-between" data-act="add"><span>Adicionar</span><span class="num">${brl(unitPrice(p, sel) * sheet.qty)}</span></button>`;
+  } else if (sheet.type === 'cart') {
+    body = `<h2 style="font-size:26px">Sua sacola</h2>${cart.length ? cart.map((l, i) => `<div class="line"><div style="min-width:0"><b>${esc(l.name)}</b>${l.opts.length ? `<div class="muted" style="font-size:14px">${esc(l.opts.join(', '))}</div>` : ''}${l.notes ? `<div class="muted" style="font-size:14px">Obs.: ${esc(l.notes)}</div>` : ''}
+      <div class="qty" style="display:inline-flex;margin-top:6px"><button data-cq="${i}:-1" aria-label="Diminuir">−</button><span class="num">${l.qty}</span><button data-cq="${i}:1" aria-label="Aumentar">+</button></div></div><b class="num">${brl(l.unit * l.qty)}</b></div>`).join('') : '<p class="muted">Sua sacola está vazia.</p>'}`;
+    foot = cart.length ? `<button class="btn btn-line" data-act="clear">Limpar</button><button class="btn btn-red" style="flex:1" data-act="checkout">Continuar · ${brl(subtotal())}</button>` : `<button class="btn btn-line" style="flex:1" data-act="close">Voltar ao cardápio</button>`;
+  } else if (sheet.type === 'checkout') {
+    const f = sheet.f; const z = ZONES.find((x) => x.id === f.zone); const fee = f.mode === 'entrega' && z ? z.fee : 0; const tot = r2(subtotal() + fee);
+    body = `<h2 style="font-size:26px">Fechar pedido</h2>
+      <form id="ck" class="form" novalidate>
+        <div class="choice"><button type="button" data-mode="entrega" class="${f.mode === 'entrega' ? 'on' : ''}"><b>Entregar</b><br><small>${z ? `~${z.min} min` : 'no seu endereço'}</small></button>
+          <button type="button" data-mode="retirada" class="${f.mode === 'retirada' ? 'on' : ''}"><b>Retirar no balcão</b><br><small>~${STORE.prep} min, sem taxa</small></button></div>
+        <div class="choice"><button type="button" data-when="agora" class="${f.when === 'agora' ? 'on' : ''}" ${openNow() ? '' : 'disabled'}><b>Agora</b><br><small>${openNow() ? 'assim que ficar pronto' : 'estamos fechados'}</small></button>
+          <button type="button" data-when="agendar" class="${f.when === 'agendar' ? 'on' : ''}"><b>Agendar</b><br><small>até 7 dias</small></button></div>
+        ${f.when === 'agendar' ? `<div class="two" style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><label><span>Data</span><input id="f-date" type="date" value="${esc(f.date)}"></label><label><span>Horário</span><input id="f-time" type="time" step="900" value="${esc(f.time)}"></label></div>` : ''}
+        <label><span>Nome</span><input id="f-name" autocomplete="name" value="${esc(f.name)}"></label>
+        <label><span>Telefone (WhatsApp)</span><input id="f-phone" inputmode="tel" autocomplete="tel" placeholder="(00) 00000-0000" value="${esc(f.phone)}"></label>
+        ${f.mode === 'entrega' ? `<label><span>Bairro</span><select id="f-zone"><option value="">Selecione o bairro</option>${ZONES.map((x) => `<option value="${x.id}" ${f.zone === x.id ? 'selected' : ''}>${x.name} · ${brl(x.fee)}</option>`).join('')}</select></label>
+          <div class="two"><label><span>Rua</span><input id="f-street" autocomplete="address-line1" value="${esc(f.street)}"></label><label><span>Número</span><input id="f-number" value="${esc(f.number)}"></label></div>
+          <label><span>Complemento e referência</span><input id="f-ref" value="${esc(f.ref)}"></label>` : ''}
+        <label><span>Pagamento (na ${f.mode === 'entrega' ? 'entrega' : 'retirada'})</span><select id="f-pay">${PAYS.map(([c, n]) => `<option value="${c}" ${f.pay === c ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
+        ${f.pay === 'dinheiro' ? `<label><span>Troco para quanto? (opcional)</span><input id="f-change" inputmode="decimal" value="${esc(f.change)}"></label>` : ''}
+        <label><span>Observação (opcional)</span><textarea id="f-notes" rows="2" maxlength="500">${esc(f.notes)}</textarea></label>
+        <label style="display:flex;gap:10px;align-items:flex-start"><input id="f-ok" type="checkbox" style="width:20px;height:20px;accent-color:var(--red)" ${f.ok ? 'checked' : ''}><span style="font-weight:400">Autorizo o uso do meu nome, telefone e endereço para este pedido.</span></label>
+        <div class="tot"><dl><dt class="muted">Subtotal</dt><dd class="num">${brl(subtotal())}</dd>${f.mode === 'entrega' ? `<dt class="muted">Entrega</dt><dd class="num">${z ? brl(fee) : '—'}</dd>` : ''}<dt><b>Total</b></dt><dd class="num"><b>${brl(tot)}</b></dd></dl></div>
+        ${sheet.err ? `<p class="err" role="alert">${esc(sheet.err)}</p>` : ''}
+      </form>`;
+    foot = `<button class="btn btn-line" data-act="cart">Voltar</button><button class="btn btn-red" style="flex:1" data-act="send" ${sheet.sending || canOrder === false ? 'disabled' : ''}>${sheet.sending ? 'Enviando…' : canOrder === false ? 'Envio não liberado' : 'Enviar pedido'}</button>`;
+  }
+  return `<div class="sheet" role="dialog" aria-modal="true"><div class="shade" data-act="close"></div><div class="panel"><button class="close" data-act="close" aria-label="Fechar">×</button><div class="scroll">${body}</div><div class="foot">${foot}</div></div></div>`;
+}
+
+function trackView(c) {
+  const o = (myDoc?.orders ?? []).find((x) => x.code === c);
+  if (!o) return `${header()}<div class="wrap"><p>${db ? 'Pedido não encontrado nesta conta.' : 'Carregando…'}</p><a class="btn btn-line" href="#cardapio">Voltar ao cardápio</a></div>`;
+  const steps = o.mode === 'entrega' ? ['recebido','confirmado','preparo','pronto','saiu','entregue'] : ['recebido','confirmado','preparo','pronto','entregue'];
+  const at = Object.fromEntries((o.history ?? []).map((h) => [h.s, h.at]));
+  const idx = steps.indexOf(o.status);
+  return `${header()}<div class="wrap" style="padding-bottom:60px">
+    <p class="muted" style="margin:6px 0 0">${esc(o.name.split(' ')[0])}, seu pedido</p><h2 style="font-size:44px;line-height:1">${o.code}</h2>
+    ${o.status === 'cancelado' ? `<p class="err">Este pedido foi cancelado.${o.cancelReason ? ' ' + esc(o.cancelReason) : ''}</p>` :
+      `<p style="font-size:17px;margin:6px 0 0"><b>${STATUS[o.status]}</b>${o.status !== 'entregue' ? `<span class="muted"> · ${o.scheduledFor ? 'agendado para ' + new Date(o.scheduledFor).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : 'previsão ' + hhmm(new Date(o.createdAt).getTime() + (o.eta ?? 45) * 60000)}</span>` : ''}</p>
+      <ol class="steps">${steps.map((s, i) => `<li class="${i <= idx ? 'done' : ''}"><b style="font-weight:${i <= idx ? 600 : 400}">${STATUS[s]}</b>${at[s] ? ` <span class="muted">${hhmm(at[s])}</span>` : ''}</li>`).join('')}</ol>`}
+    <h3 style="font-size:20px;margin-top:20px">O que você pediu</h3>
+    ${o.items.map((l) => `<div class="line"><span>${l.qty}× ${esc(l.name)}${l.opts.length ? `<br><span class="muted" style="font-size:14px">${esc(l.opts.join(', '))}</span>` : ''}</span><span class="num">${brl(l.unit * l.qty)}</span></div>`).join('')}
+    <div class="tot" style="margin-top:10px"><dl><dt class="muted">Subtotal</dt><dd class="num">${brl(o.subtotal)}</dd>${o.mode === 'entrega' ? `<dt class="muted">Entrega</dt><dd class="num">${brl(o.fee)}</dd>` : ''}<dt><b>Total</b></dt><dd class="num"><b>${brl(o.total)}</b></dd>
+      <dt class="muted">Pagamento</dt><dd>${esc(PAYS.find(([c]) => c === o.pay)?.[1] ?? o.pay)}${o.change ? `, troco para ${brl(o.change)}` : ''}</dd></dl></div>
+    <p class="muted" style="font-size:14px">Esta página se atualiza sozinha.</p>
+    <a class="btn btn-line" style="width:100%" href="#cardapio">Voltar ao cardápio</a></div>`;
+}
+
+function staffView() {
+  if (!isStaff) return `${header()}<div class="wrap"><p>O painel da loja é só para quem tem acesso de Editor a este site.</p><a class="btn btn-line" href="#cardapio">Ir para o cardápio</a></div>`;
+  const all = allDocs.flatMap((d) => (d.orders ?? []).map((o) => ({ ...o, owner: d.id }))).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const today = new Date().toDateString();
+  const todays = all.filter((o) => new Date(o.createdAt).toDateString() === today && o.status !== 'cancelado');
+  const list = staffFilter === 'ativos' ? all.filter((o) => !['entregue', 'cancelado'].includes(o.status)) : staffFilter === 'hoje' ? all.filter((o) => new Date(o.createdAt).toDateString() === today) : all;
+  return `<div class="wrap" style="padding-bottom:60px"><div class="top"><div><h1>Pedidos da loja</h1><div class="muted" style="font-size:14px">${esc(STORE.name)} · atualiza em tempo real</div></div><a href="#cardapio" style="color:var(--red);font-weight:600;padding-top:8px">Cardápio</a></div>
+    <div class="stats"><div><span class="muted" style="font-size:13px">Pedidos hoje</span><b class="num">${todays.length}</b></div><div><span class="muted" style="font-size:13px">Vendido hoje</span><b class="num">${brl(todays.reduce((s, o) => s + o.total, 0))}</b></div><div><span class="muted" style="font-size:13px">Aguardando</span><b class="num">${all.filter((o) => o.status === 'recebido').length}</b></div></div>
+    <div class="filter">${[['ativos','Em andamento'],['hoje','Hoje'],['todos','Todos']].map(([k, l]) => `<button data-filter="${k}" class="${staffFilter === k ? 'on' : ''}">${l}</button>`).join('')}</div>
+    <div class="board">${list.length ? list.map((o) => {
+      const next = o.status === 'pronto' ? (o.mode === 'entrega' ? ['saiu', 'Saiu para entrega'] : ['entregue', 'Entregue ao cliente']) : o.status === 'saiu' ? ['entregue', 'Entregue'] : FLOW[o.status];
+      const tone = o.status === 'recebido' ? 'novo' : o.status === 'cancelado' ? 'red' : 'ok';
+      const a = o.address;
+      return `<article class="ord"><header><h3>${o.code}</h3><span class="pill ${tone}">${STATUS[o.status]}</span></header>
+        <div class="muted" style="font-size:14px">${hhmm(o.createdAt)} · ${o.mode === 'entrega' ? 'Entrega' : 'Retirada'}${o.scheduledFor ? ` · <b style="color:var(--ink)">para ${new Date(o.scheduledFor).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}</b>` : ''}</div>
+        <p style="margin:6px 0 0"><b>${esc(o.name)}</b> · <span class="num">${esc(fmtPhone(o.phone))}</span>${a ? `<br>${esc([a.street, a.number].filter(Boolean).join(', '))} — ${esc(a.zone)}${a.ref ? ` (${esc(a.ref)})` : ''}` : ''}</p>
+        <div style="margin-top:8px">${o.items.map((l) => `<div class="line" style="padding:6px 0"><span>${l.qty}× ${esc(l.name)}${l.opts.length ? ` <span class="muted">· ${esc(l.opts.join(', '))}</span>` : ''}${l.notes ? `<br><b style="color:var(--red);font-size:14px">Obs.: ${esc(l.notes)}</b>` : ''}</span><span class="num">${brl(l.unit * l.qty)}</span></div>`).join('')}</div>
+        ${o.notes ? `<p style="font-size:14px"><b>Obs. do pedido:</b> ${esc(o.notes)}</p>` : ''}
+        <p style="margin:8px 0 0"><b class="num">${brl(o.total)}</b> <span class="muted">· ${esc(PAYS.find(([c]) => c === o.pay)?.[1] ?? o.pay)}${o.change ? `, troco para ${brl(o.change)} (devolver ${brl(o.change - o.total)})` : ''}</span></p>
+        ${!['entregue', 'cancelado'].includes(o.status) ? `<div class="acts">${next ? `<button class="btn btn-red" data-next="${o.owner}|${o.code}|${next[0]}">${next[1]}</button>` : ''}
+          ${sheet?.cancel === o.code ? `<button class="btn btn-line" data-next="${o.owner}|${o.code}|cancelado">Confirmar cancelamento</button><button class="btn" data-cancel="">Não cancelar</button>` : `<button class="btn btn-line" data-cancel="${o.code}">Cancelar</button>`}</div>` : ''}
+      </article>`; }).join('') : `<p class="muted">${allDocs.length ? 'Nenhum pedido neste filtro.' : 'Nenhum pedido ainda. Quando alguém enviar um pedido pelo cardápio, ele aparece aqui na hora.'}</p>`}</div></div>`;
+}
+
+/* ---------- interações ---------- */
+function readForm() {
+  const f = sheet.f; const v = (id) => $('#' + id)?.value;
+  for (const [k, id] of [['name','f-name'],['phone','f-phone'],['zone','f-zone'],['street','f-street'],['number','f-number'],['ref','f-ref'],['pay','f-pay'],['change','f-change'],['notes','f-notes'],['date','f-date'],['time','f-time']]) { const x = v(id); if (x !== undefined) f[k] = x; }
+  const ok = $('#f-ok'); if (ok) f.ok = ok.checked;
+}
+
+function bind() {
+  const app = $('#app');
+  app.onclick = async (e) => {
+    const t = e.target.closest('[data-act],[data-open],[data-go],[data-q],[data-cq],[data-mode],[data-when],[data-next],[data-cancel],[data-filter]');
+    if (!t) return;
+    if (sheet?.type === 'checkout' && !t.dataset.next) readForm();
+    if (t.dataset.go) { document.getElementById(t.dataset.go)?.scrollIntoView({ behavior: 'smooth' }); app.querySelectorAll('nav.tabs button').forEach((b) => b.classList.toggle('on', b === t)); return; }
+    if (t.dataset.open) { const p = P.find((x) => x.id === t.dataset.open); sheet = { type: 'product', id: p.id, qty: 1, notes: '', sel: p.groups.filter((g) => g.min === 1 && g.max === 1).map((g) => g.options[0][0]) }; return render(); }
+    if (t.dataset.q) { sheet.notes = $('#pnotes')?.value ?? ''; sheet.qty = Math.max(1, Math.min(99, sheet.qty + Number(t.dataset.q))); return render(); }
+    if (t.dataset.cq) { const [i, d] = t.dataset.cq.split(':').map(Number); cart[i].qty += d; if (cart[i].qty <= 0) cart.splice(i, 1); saveCart(); return render(); }
+    if (t.dataset.mode) { sheet.f.mode = t.dataset.mode; return render(); }
+    if (t.dataset.when) { sheet.f.when = t.dataset.when; return render(); }
+    if (t.dataset.filter) { staffFilter = t.dataset.filter; return render(); }
+    if (t.dataset.cancel !== undefined) { sheet = t.dataset.cancel ? { cancel: t.dataset.cancel } : null; return render(); }
+    if (t.dataset.next) return advance(...t.dataset.next.split('|'));
+    const a = t.dataset.act;
+    if (a === 'close') { sheet = null; return render(); }
+    if (a === 'cart') { sheet = { type: 'cart' }; return render(); }
+    if (a === 'clear') { cart = []; saveCart(); sheet = null; return render(); }
+    if (a === 'add') {
+      const p = P.find((x) => x.id === sheet.id); sheet.notes = $('#pnotes')?.value.trim() ?? '';
+      const err = p.groups.some((g) => g.options.filter(([o]) => sheet.sel.includes(o)).length < g.min);
+      if (err) { sheet.tried = true; return render(); }
+      const key = [p.id, [...sheet.sel].sort().join(','), sheet.notes.toLowerCase()].join('|');
+      const ex = cart.find((l) => l.key === key);
+      if (ex) ex.qty += sheet.qty; else cart.push({ key, id: p.id, name: p.name, unit: unitPrice(p, sheet.sel), qty: sheet.qty, opts: [...sheet.sel], notes: sheet.notes });
+      saveCart(); sheet = null; return render();
+    }
+    if (a === 'checkout') { sheet = { type: 'checkout', f: { mode: 'entrega', when: openNow() ? 'agora' : 'agendar', pay: 'pix', ok: false, name: profile.name ?? '', phone: profile.phone ?? '', zone: profile.zone ?? '', street: profile.street ?? '', number: profile.number ?? '', ref: profile.ref ?? '', change: '', notes: '', date: '', time: '' } }; return render(); }
+    if (a === 'send') return send();
+  };
+  app.oninput = (e) => {
+    if (e.target.id === 'f-phone') { e.target.value = fmtPhone(e.target.value); }
+  };
+  app.onchange = (e) => {
+    if (e.target.dataset.opt !== undefined) {
+      const p = P.find((x) => x.id === sheet.id); const g = p.groups[Number(e.target.dataset.g)]; const names = g.options.map(([o]) => o); const o = e.target.dataset.opt;
+      sheet.notes = $('#pnotes')?.value ?? '';
+      if (g.max === 1) sheet.sel = [...sheet.sel.filter((x) => !names.includes(x)), o];
+      else if (e.target.checked) { if (sheet.sel.filter((x) => names.includes(x)).length < g.max) sheet.sel.push(o); }
+      else sheet.sel = sheet.sel.filter((x) => x !== o);
+      return render();
+    }
+    if (sheet?.type === 'checkout' && ['f-zone', 'f-pay'].includes(e.target.id)) { readForm(); render(); }
+  };
+}
+
+async function send() {
+  const f = sheet.f; const phone = f.phone.replace(/\D/g, '');
+  const z = ZONES.find((x) => x.id === f.zone);
+  const fail = (m) => { sheet.err = m; render(); };
+  if (f.name.trim().length < 2) return fail('Informe seu nome.');
+  if (phone.length < 10) return fail('Informe um telefone com DDD.');
+  if (f.mode === 'entrega' && !z) return fail('Selecione o bairro de entrega.');
+  if (f.mode === 'entrega' && !f.street.trim()) return fail('Informe a rua e o número.');
+  let scheduledFor = null;
+  if (f.when === 'agendar') {
+    if (!f.date || !f.time) return fail('Informe a data e o horário do agendamento.');
+    const d = new Date(`${f.date}T${f.time}:00`);
+    if (d < new Date(Date.now() + 30 * 60000)) return fail('Agende com pelo menos 30 minutos de antecedência.');
+    if (d > new Date(Date.now() + 7 * 864e5)) return fail('Agendamento até 7 dias.');
+    if (!openNow(d)) return fail('Estamos fechados nesse horário. Veja o horário no rodapé.');
+    scheduledFor = d.toISOString();
+  } else if (!openNow()) return fail('Estamos fechados agora. Escolha Agendar.');
+  const fee = f.mode === 'entrega' ? z.fee : 0; const sub = subtotal(); const total = r2(sub + fee);
+  const change = f.pay === 'dinheiro' && f.change ? Number(String(f.change).replace(',', '.')) : null;
+  if (change !== null && !(change > total)) return fail('O troco deve ser para um valor maior que o total.');
+  if (!f.ok) return fail('Para enviar, autorize o uso dos seus dados para este pedido.');
+  if (!db || !myId) return fail('Não foi possível conectar ao sistema de pedidos. Abra o site pelo link do Claude e entre na sua conta.');
+  sheet.sending = true; sheet.err = null; render();
+  const now = new Date().toISOString();
+  // preços sempre recalculados a partir do cardápio, nunca do que está salvo no navegador
+  const items = cart.map((l) => { const p = P.find((x) => x.id === l.id); return { id: p.id, name: p.name, qty: l.qty, opts: l.opts, notes: l.notes, unit: unitPrice(p, l.opts) }; });
+  const order = { code: code(), createdAt: now, status: 'recebido', history: [{ s: 'recebido', at: now }], name: f.name.trim(), phone, mode: f.mode,
+    address: f.mode === 'entrega' ? { zone: z.name, street: f.street.trim(), number: f.number.trim(), ref: f.ref.trim() } : null,
+    items, subtotal: r2(items.reduce((s, l) => s + l.unit * l.qty, 0)), fee, total: r2(items.reduce((s, l) => s + l.unit * l.qty, 0) + fee), pay: f.pay, change,
+    notes: f.notes.trim(), scheduledFor, eta: (f.mode === 'entrega' ? z.min : STORE.prep), consent: { dados: now } };
+  try {
+    const orders = [order, ...(myDoc?.orders ?? [])].slice(0, 30);
+    await db.doc('orders/' + myId).set({ orders, updatedAt: now });
+    try { localStorage.setItem('bs.profile', JSON.stringify({ name: f.name, phone: f.phone, zone: f.zone, street: f.street, number: f.number, ref: f.ref })); } catch {}
+    cart = []; saveCart(); sheet = null; location.hash = '#pedido-' + order.code;
+  } catch (e) {
+    sheet.sending = false;
+    if (e?.code === 'invalid_argument' || e?.code === 'not_granted') { canOrder = false; fail('Sua conta não tem permissão para enviar pedidos por este link. Peça ao dono acesso de Colaborador.'); }
+    else fail('Não foi possível enviar agora. Verifique a conexão e tente de novo.');
+  }
+}
+
+async function advance(owner, c, next) {
+  const d = allDocs.find((x) => x.id === owner); if (!d) return;
+  const now = new Date().toISOString();
+  const orders = d.orders.map((o) => o.code === c ? { ...o, status: next, history: [...(o.history ?? []), { s: next, at: now }], ...(next === 'cancelado' ? { cancelReason: 'Cancelado pela loja.' } : {}) } : o);
+  sheet = null;
+  try { await db.doc('orders/' + owner).update({ orders, updatedAt: now }); } catch { render(); }
+}
+
+render();
+</script>
